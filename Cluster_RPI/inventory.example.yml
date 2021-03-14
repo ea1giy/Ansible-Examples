@@ -1,0 +1,11 @@
+all:
+  children:
+
+    RPIs:
+      hosts:
+        RPI1:
+          ansible_host: 192.168.0.2
+        RPI2:
+          ansible_host: 192.168.0.3
+        RPI3:
+          ansible_host: 192.168.0.4

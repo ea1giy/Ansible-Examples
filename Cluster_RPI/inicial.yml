@@ -1,0 +1,91 @@
+---
+- name: Configuración inicial para el cluster de raspberry
+  hosts: all
+  become: true
+
+  # Usuario y contraseña por defecto de Rasbian
+  vars:
+    ansible_user: pi
+    ansible_ssh_pass: raspberry
+
+  # Prompt interactivo para crear el nuevo usuario y su contraseña
+  vars_prompt:
+    - name: ansible_user
+      prompt: Usuario raspberry
+      private: no
+      default: pi
+
+    - name: ansible_ssh_pass
+      prompt: "contraseña usuario raspberry"
+      default: raspberry
+
+    - name: new_user
+      prompt: New username
+      private: no
+
+    - name: new_user_password
+      prompt: password
+      private: yes
+      encrypt: sha512_crypt
+      confirm: yes
+
+    - name: user_pub_key
+      prompt: Ruta de la llave pública del Usuario
+      private: no
+      default: "{{ lookup('env','HOME') + '/.ssh/id_rsa.pub' }}"
+
+
+  tasks:
+    # Actualizamos el sistema
+    - name: Actualizar sistema
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+
+    # Crear usuario
+    - name: Crear usuario "{{ new_user }}"
+      ansible.builtin.user:
+        name: "{{ new_user }}"
+        comment: Username create with Ansible
+        password: "{{ new_user_password }}"
+
+    # Añadir usuario al grupo sudo
+    - name: Añadir nuevo usuario a SUDO
+      ansible.builtin.user:
+        name: "{{ new_user }}"
+        groups: sudo
+        append: yes
+
+    # Habilitar el uso de SUDO sin pedir contraseña
+    - name: Deshabilitar la petición de contraseña para comandos con SUDO
+      ansible.builtin.lineinfile:
+        path: "/etc/sudoers.d/010_{{ new_user }}-nopasswd"
+        line: "{{ new_user }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+
+    # Copiar llave SSH
+    - name: Copiar llave pública a máquina remota
+      authorized_key:
+        user: "{{ new_user }}"
+        state: present
+        key: "{{ lookup('file', user_pub_key) }}"
+
+    # Borrar usuario PI
+    - name: Borrar usuario "pi"
+      ansible.builtin.user:
+        name: pi
+        state: absent
+        remove: yes
+        force: yes
+
+
+    # TODO:
+    #
+    # Deshabilitar acceso por contraseña
+    # Deshabilitar acceso root
+    # Cambiar el hostname
+    # Instalar Consul
+    # Instalar Nomad con autodescubrimiento usando Consul
+    # Instalar Vault usando consul como backend de storage
+    #
