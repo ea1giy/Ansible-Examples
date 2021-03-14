@@ -3,7 +3,7 @@
   hosts: all
   become: true
 
-  # Usuario y contraseña por defecto de Rasbian
+  # Usuario y contraseña por defecto de Raspbian
   vars:
     ansible_user: pi
     ansible_ssh_pass: raspberry
