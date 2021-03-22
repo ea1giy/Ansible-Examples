@@ -71,6 +71,23 @@
         state: present
         key: "{{ lookup('file', user_pub_key) }}"
 
+    # Cambiar hostname
+    - name: Cambiar hostname
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+
+    # Configurar NTP
+    # Configurar /etc/hosts, asigna el nombre local
+    - name: Cambiar archivo /etc/hosts
+      template:
+        src: templates/basic_hosts.j2
+        dest: /etc/hosts
+        backup: yes
+
+    # Deshabilitar el acceso root por SSH
+
+    # Deshabilitar el acceso por contraseña
+
     # Borrar usuario PI
     - name: Borrar usuario "pi"
       ansible.builtin.user:
