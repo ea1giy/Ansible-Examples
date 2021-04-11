@@ -37,11 +37,11 @@
 
   tasks:
     # Actualizamos el sistema
-    - name: Actualizar sistema
-      apt:
-        name: "*"
-        state: latest
-        update_cache: yes
+    # - name: Actualizar sistema
+    #   apt:
+    #     name: "*"
+    #     state: latest
+    #     update_cache: yes
 
     # Crear usuario
     - name: Crear usuario "{{ new_user }}"
@@ -77,6 +77,15 @@
         name: "{{ hostname }}"
 
     # Configurar NTP
+    - name: Configurar el NTP para usar los servidores de PTB time
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/timesyncd.conf
+        regexp: '^#NTP='
+        line: NTP=ptbtime1.ptb.de ptbtime2.ptb.de ptbtime3.ptb.de
+    - name: Configurar zona horaria a Europe/Madrid
+      community.general.timezone:
+        name: Europe/Madrid
+
     # Configurar /etc/hosts, asigna el nombre local
     - name: Cambiar archivo /etc/hosts
       template:
@@ -85,13 +94,35 @@
         backup: yes
 
     # Deshabilitar el acceso root por SSH
-
+    - name: Deshabilitar el acceso al usuario root
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#PermitRootLogin'
+        line: PermitRootLogin No
+      notify:
+      - Restart SSH
+    
     # Deshabilitar el acceso por contraseña
+    - name: Deshabilitar el acceso por contraseña
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#PasswordAuthentication'
+        line: PasswordAuthentication no
+      notify:
+      - Restart SSH
 
     # Borrar usuario PI
     - name: Borrar usuario "pi"
+      become_user: "{{ new_user }}"
       ansible.builtin.user:
         name: pi
         state: absent
         remove: yes
         force: yes
+
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
