@@ -37,11 +37,11 @@
 
   tasks:
     # Actualizamos el sistema
-    # - name: Actualizar sistema
-    #   apt:
-    #     name: "*"
-    #     state: latest
-    #     update_cache: yes
+    - name: Actualizar sistema
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
 
     # Crear usuario
     - name: Crear usuario "{{ new_user }}"
@@ -101,7 +101,7 @@
         line: PermitRootLogin No
       notify:
       - Restart SSH
-    
+
     # Deshabilitar el acceso por contraseña
     - name: Deshabilitar el acceso por contraseña
       ansible.builtin.lineinfile:
