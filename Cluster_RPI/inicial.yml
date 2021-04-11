@@ -36,7 +36,7 @@
 
 
   tasks:
-    # Actualizamos el sistema
+    Actualizamos el sistema
     - name: Actualizar sistema
       apt:
         name: "*"
@@ -71,6 +71,24 @@
         state: present
         key: "{{ lookup('file', user_pub_key) }}"
 
+    # Deshabilitar el acceso root por SSH
+    - name: Deshabilitar el acceso al usuario root
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#PermitRootLogin'
+        line: PermitRootLogin No
+      notify:
+      - Restart SSH
+
+    # Deshabilitar el acceso por contraseña
+    - name: Deshabilitar el acceso por contraseña
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#PasswordAuthentication'
+        line: PasswordAuthentication no
+      notify:
+      - Restart SSH
+
     # Cambiar hostname
     - name: Cambiar hostname
       ansible.builtin.hostname:
@@ -93,23 +111,17 @@
         dest: /etc/hosts
         backup: yes
 
-    # Deshabilitar el acceso root por SSH
-    - name: Deshabilitar el acceso al usuario root
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#PermitRootLogin'
-        line: PermitRootLogin No
+    # Cambiar fstab para aumentar la vida de la tarjeta SD
+    - name: Modificar fstab para aumentar vida de la SD
+      ansible.builtin.blockinfile:
+        path: /etc/fstab
+        insertafter: EOF
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR RPI"
+        block: "{{ lookup('template', 'templates/fstab.j2') }}"
+        backup: yes
       notify:
-      - Restart SSH
+        - Reboot RPI
 
-    # Deshabilitar el acceso por contraseña
-    - name: Deshabilitar el acceso por contraseña
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#PasswordAuthentication'
-        line: PasswordAuthentication no
-      notify:
-      - Restart SSH
 
     # Borrar usuario PI
     - name: Borrar usuario "pi"
@@ -120,6 +132,10 @@
         remove: yes
         force: yes
 
+    # Reiniciar RPI al terminar toda la instalación
+    - name: Reiniciar RPI
+      ansible.builtin.reboot:
+        reboot_timeout: 300
 
   handlers:
     - name: Restart SSH
