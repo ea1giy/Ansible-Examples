@@ -36,7 +36,7 @@
 
 
   tasks:
-    Actualizamos el sistema
+    # Actualizamos el sistema
     - name: Actualizar sistema
       apt:
         name: "*"
@@ -89,6 +89,9 @@
       notify:
       - Restart SSH
 
+    # Reiniciar el servicio ssh
+    - name: Ejecutar Handlers
+      meta: flush_handlers
     # Cambiar hostname
     - name: Cambiar hostname
       ansible.builtin.hostname:
